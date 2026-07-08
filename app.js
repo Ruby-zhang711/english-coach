@@ -46,7 +46,10 @@ const els = {
   markKnown: document.querySelector("#markKnown"),
   importSample: document.querySelector("#importSample"),
   exportData: document.querySelector("#exportData"),
+  importData: document.querySelector("#importData"),
+  backupFile: document.querySelector("#backupFile"),
   clearDone: document.querySelector("#clearDone"),
+  saveStatus: document.querySelector("#saveStatus"),
   friendNameInput: document.querySelector("#friendNameInput"),
   generateFriendLink: document.querySelector("#generateFriendLink"),
   friendLinkOutput: document.querySelector("#friendLinkOutput"),
@@ -214,7 +217,7 @@ function daysBetween(a, b) {
 }
 
 function loadState() {
-  const fallback = { words: [], tasks: {}, mistakes: [], streak: { count: 0, lastActive: "" }, unlockedEggs: [] };
+  const fallback = { words: [], tasks: {}, mistakes: [], streak: { count: 0, lastActive: "" }, unlockedEggs: [], updatedAt: "" };
   try {
     const profileState = JSON.parse(localStorage.getItem(STORAGE_KEY));
     if (profileState) return { ...fallback, ...profileState };
@@ -226,7 +229,19 @@ function loadState() {
 }
 
 function saveState() {
+  state.updatedAt = new Date().toISOString();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  renderSaveStatus();
+}
+
+function renderSaveStatus() {
+  if (!els.saveStatus) return;
+  if (!state.updatedAt) {
+    els.saveStatus.textContent = "已启用本机自动保存";
+    return;
+  }
+  const savedAt = new Date(state.updatedAt);
+  els.saveStatus.textContent = `已保存到本机：${savedAt.toLocaleString("zh-CN", { hour12: false })}`;
 }
 
 function dueStage(word) {
@@ -253,6 +268,7 @@ function render() {
   els.profileLabel.textContent = `当前空间：${getProfileName()}`;
   els.streakCount.textContent = String(state.streak?.count || 0);
   renderDailyQuote();
+  renderSaveStatus();
 
   const visibleWords = state.words.filter((word) => {
     if (hideMastered && word.mastered) return false;
@@ -819,15 +835,71 @@ els.micButton.addEventListener("click", () => {
   showToast("Speak clearly, then listen back like a coach.");
 });
 
+function createBackupPayload() {
+  return {
+    app: "private-english-coach",
+    version: 1,
+    profile: PROFILE_ID,
+    profileName: getProfileName(),
+    exportedAt: new Date().toISOString(),
+    state,
+  };
+}
+
+function downloadBackup(text) {
+  const blob = new Blob([text], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `english-coach-${PROFILE_ID}-${todayISO()}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 els.exportData.addEventListener("click", async () => {
-  const text = JSON.stringify(state, null, 2);
+  const text = JSON.stringify(createBackupPayload(), null, 2);
+  downloadBackup(text);
   try {
     await navigator.clipboard.writeText(text);
-    els.exportData.textContent = "已复制";
-    showToast("Backup copied. Future you is protected.");
-    setTimeout(() => { els.exportData.textContent = "导出数据"; }, 1200);
+    els.exportData.textContent = "已下载";
+    showToast("Backup downloaded and copied. Future you is protected.");
+    setTimeout(() => { els.exportData.textContent = "下载备份"; }, 1200);
   } catch {
-    alert(text);
+    showToast("Backup downloaded.");
+  }
+});
+
+els.importData.addEventListener("click", () => {
+  els.backupFile.click();
+});
+
+els.backupFile.addEventListener("change", async () => {
+  const file = els.backupFile.files?.[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    const importedState = parsed.state || parsed;
+    if (!importedState || !Array.isArray(importedState.words)) {
+      throw new Error("Invalid backup file");
+    }
+    state = {
+      words: importedState.words || [],
+      tasks: importedState.tasks || {},
+      mistakes: importedState.mistakes || [],
+      streak: importedState.streak || { count: 0, lastActive: "" },
+      unlockedEggs: importedState.unlockedEggs || [],
+      updatedAt: importedState.updatedAt || "",
+    };
+    saveState();
+    render();
+    showToast("Backup imported. Your words are back.");
+  } catch {
+    showToast("Import failed. Please choose a valid English Coach backup.");
+  } finally {
+    els.backupFile.value = "";
   }
 });
 
