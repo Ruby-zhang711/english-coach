@@ -15,6 +15,11 @@
           <p id="profileLabel" class="profile-label">当前空间：我的英语训练</p>
         </div>
         <div class="top-actions">
+          <div class="streak-card">
+            <span>Streak</span>
+            <strong id="streakCount">0</strong>
+            <span>days</span>
+          </div>
           <div class="today-card">
             <span id="todayLabel">Today</span>
             <strong id="dueCount">0</strong>
@@ -22,6 +27,14 @@
           </div>
           <button id="openDueQuiz" class="primary-btn compact" type="button">参加测验</button>
         </div>
+      </section>
+
+      <section class="quote-card" aria-label="今日鼓励">
+        <div>
+          <span class="quote-kicker">Today's spark</span>
+          <p id="dailyQuote">Small steps still count.</p>
+        </div>
+        <button id="newQuote" class="soft-btn" type="button">换一句</button>
       </section>
 
       <section id="dueBanner" class="due-banner" aria-live="polite">
@@ -190,9 +203,15 @@
             <span>定期测试</span>
             <p>输入测试考词义、词形、同义替换和搭配；输出测试考写作、复述、改写和观点表达。</p>
           </div>
+          <div class="prompt-block easter-hint">
+            <span>隐藏彩蛋</span>
+            <p>在写作或口语框里试试输入 keep going、level up 或 sharp mind。</p>
+          </div>
         </aside>
       </section>
     </main>
+
+    <div id="toast" class="toast" aria-live="polite"></div>
 
     <dialog id="quizDialog" class="quiz-dialog">
       <form method="dialog" class="quiz-box">
