@@ -27,6 +27,7 @@ The project was designed around a practical learning workflow:
 - Local feedback prompts for better expression
 - Mistake notebook for corrected sentences
 - Friend profile links using URL hash profiles
+- Daily encouragement lines, streak tracking, and small easter eggs
 - Browser local storage, no backend required
 
 ## Tech Stack
@@ -48,6 +49,7 @@ Key engineering decisions:
 - Spaced repetition logic implemented in client-side JavaScript
 - Local persistence through browser storage
 - Responsive dashboard layout for desktop and mobile use
+- Small motivational interactions to keep the learning loop warm and encouraging
 
 ## How It Works
 

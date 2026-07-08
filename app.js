@@ -7,6 +7,10 @@ const els = {
   profileLabel: document.querySelector("#profileLabel"),
   todayLabel: document.querySelector("#todayLabel"),
   dueCount: document.querySelector("#dueCount"),
+  streakCount: document.querySelector("#streakCount"),
+  dailyQuote: document.querySelector("#dailyQuote"),
+  newQuote: document.querySelector("#newQuote"),
+  toast: document.querySelector("#toast"),
   dueBanner: document.querySelector("#dueBanner"),
   dueBannerTitle: document.querySelector("#dueBannerTitle"),
   dueBannerText: document.querySelector("#dueBannerText"),
@@ -55,6 +59,28 @@ let quizQueue = [];
 let currentQuiz = null;
 let hideMastered = false;
 let lastFeedback = "";
+
+const ENCOURAGEMENTS = [
+  "Small steps still count.",
+  "You are building fluency one sentence at a time.",
+  "Accuracy first, elegance next.",
+  "Your future self will thank you for today's review.",
+  "A sharp mind is made by repeated returns.",
+  "Speak before you feel ready. That is how readiness grows.",
+  "One useful sentence is better than ten passive words.",
+  "Every mistake is a receipt for progress.",
+  "Keep going. Your English is getting more precise.",
+  "Today's effort becomes tomorrow's instinct.",
+  "You do not need perfect English. You need usable English.",
+  "The goal is not to remember once. The goal is to retrieve often.",
+];
+
+const EASTER_EGGS = {
+  "keep going": "Keep going. Quiet consistency is a serious superpower.",
+  "level up": "Level up unlocked: use one new word in a real sentence today.",
+  "sharp mind": "Sharp mind mode: explain one idea with fewer, stronger words.",
+  "i can do this": "Yes, you can. Now prove it with one clean sentence.",
+};
 
 function getProfileId() {
   const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
@@ -188,7 +214,7 @@ function daysBetween(a, b) {
 }
 
 function loadState() {
-  const fallback = { words: [], tasks: {}, mistakes: [] };
+  const fallback = { words: [], tasks: {}, mistakes: [], streak: { count: 0, lastActive: "" }, unlockedEggs: [] };
   try {
     const profileState = JSON.parse(localStorage.getItem(STORAGE_KEY));
     if (profileState) return { ...fallback, ...profileState };
@@ -225,6 +251,8 @@ function render() {
   const today = todayISO();
   els.todayLabel.textContent = today;
   els.profileLabel.textContent = `当前空间：${getProfileName()}`;
+  els.streakCount.textContent = String(state.streak?.count || 0);
+  renderDailyQuote();
 
   const visibleWords = state.words.filter((word) => {
     if (hideMastered && word.mastered) return false;
@@ -304,6 +332,11 @@ function renderTasks() {
   });
   const percent = Math.round((done / boxes.length) * 100);
   els.taskProgress.style.width = `${percent}%`;
+  if (done === boxes.length && boxes.length > 0) {
+    els.taskProgress.classList.add("complete");
+  } else {
+    els.taskProgress.classList.remove("complete");
+  }
 }
 
 function renderMistakes() {
@@ -498,13 +531,73 @@ function markCurrent(known) {
     word.correct = (word.correct || 0) + 1;
     if (word.correct >= 5 || word.reviews.includes(30)) word.mastered = true;
     word.nextDue = nextDueDate(word, true);
+    showToast(randomFrom([
+      "Clean retrieval. That one is getting stronger.",
+      "Nice. Active recall is doing its work.",
+      "Good answer. Now try using it in your own sentence.",
+    ]));
   } else {
     word.hard = (word.hard || 0) + 1;
     word.nextDue = addDays(todayISO(), 1);
+    showToast("Marked for tomorrow. Hard cards are where the growth is.");
   }
+  touchStreak();
   saveState();
   render();
   nextQuiz();
+}
+
+function renderDailyQuote() {
+  const index = Math.abs(hashString(`${todayISO()}-${PROFILE_ID}`)) % ENCOURAGEMENTS.length;
+  els.dailyQuote.textContent = ENCOURAGEMENTS[index];
+}
+
+function randomFrom(items) {
+  return items[Math.floor(Math.random() * items.length)];
+}
+
+function hashString(value) {
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = ((hash << 5) - hash) + value.charCodeAt(index);
+    hash |= 0;
+  }
+  return hash;
+}
+
+function showToast(message) {
+  if (!els.toast) return;
+  els.toast.textContent = message;
+  els.toast.classList.add("visible");
+  window.clearTimeout(showToast.timer);
+  showToast.timer = window.setTimeout(() => {
+    els.toast.classList.remove("visible");
+  }, 3200);
+}
+
+function touchStreak() {
+  const today = todayISO();
+  const lastActive = state.streak?.lastActive || "";
+  if (lastActive === today) return;
+  const yesterday = addDays(today, -1);
+  const nextCount = lastActive === yesterday ? (state.streak?.count || 0) + 1 : 1;
+  state.streak = { count: nextCount, lastActive: today };
+  els.streakCount.textContent = String(nextCount);
+  if (nextCount > 1) {
+    showToast(`${nextCount}-day streak. Keep the chain alive.`);
+  }
+}
+
+function checkEasterEgg(text) {
+  const lower = text.toLowerCase();
+  const matched = Object.keys(EASTER_EGGS).find((key) => lower.includes(key));
+  if (!matched) return;
+  state.unlockedEggs = state.unlockedEggs || [];
+  if (!state.unlockedEggs.includes(matched)) {
+    state.unlockedEggs.push(matched);
+    saveState();
+  }
+  showToast(EASTER_EGGS[matched]);
 }
 
 function parseBulkWords(text) {
@@ -572,6 +665,7 @@ els.wordForm.addEventListener("submit", (event) => {
     els.levelInput.value,
     els.synonymsInput.value,
   ));
+  touchStreak();
   saveState();
   els.wordForm.reset();
   els.levelInput.value = "C1";
@@ -581,13 +675,16 @@ els.wordForm.addEventListener("submit", (event) => {
 els.bulkAdd.addEventListener("click", () => {
   const terms = parseBulkWords(els.bulkInput.value);
   if (!terms.length) return;
+  checkEasterEgg(els.bulkInput.value);
   const existing = new Set(state.words.map((word) => word.term.toLowerCase()));
   terms.forEach((term) => {
     if (!existing.has(term.toLowerCase())) state.words.unshift(createWord(term, "", "", "C1"));
   });
   els.bulkInput.value = "";
+  touchStreak();
   saveState();
   render();
+  showToast(`${terms.length} cards added. Today's stack is ready.`);
 });
 
 els.wordList.addEventListener("click", (event) => {
@@ -598,6 +695,7 @@ els.wordList.addEventListener("click", (event) => {
   if (button.dataset.action === "review") openQuiz([word]);
   if (button.dataset.action === "master") {
     word.mastered = !word.mastered;
+    if (word.mastered) showToast("Mastered card marked. Your deck just got lighter.");
     saveState();
     render();
   }
@@ -605,6 +703,7 @@ els.wordList.addEventListener("click", (event) => {
     state.words = state.words.filter((item) => item.id !== word.id);
     saveState();
     render();
+    showToast("Card deleted.");
   }
 });
 
@@ -638,8 +737,12 @@ els.taskList.addEventListener("change", (event) => {
   const key = todayISO();
   state.tasks[key] = state.tasks[key] || {};
   state.tasks[key][box.dataset.task] = box.checked;
+  touchStreak();
   saveState();
   renderTasks();
+  const done = Array.from(els.taskList.querySelectorAll("input[type='checkbox']")).filter((item) => item.checked).length;
+  const total = els.taskList.querySelectorAll("input[type='checkbox']").length;
+  if (done === total) showToast("Daily mission complete. You showed up.");
 });
 
 els.showAnswer.addEventListener("click", () => {
@@ -661,13 +764,20 @@ els.importSample.addEventListener("click", () => {
   });
   saveState();
   render();
+  showToast("Sample cards loaded. Try one quick review.");
 });
 
 els.analyzeWriting.addEventListener("click", () => {
+  checkEasterEgg(els.writingInput.value);
+  touchStreak();
+  saveState();
   showFeedback("写作反馈", els.writingInput.value, "writing");
 });
 
 els.analyzeSpeech.addEventListener("click", () => {
+  checkEasterEgg(els.speechInput.value);
+  touchStreak();
+  saveState();
   showFeedback("口语复述反馈", els.speechInput.value, "speech");
 });
 
@@ -677,12 +787,14 @@ els.saveCorrection.addEventListener("click", () => {
   state.mistakes.unshift({ date: todayISO(), text: lastFeedback });
   saveState();
   renderMistakes();
+  showToast("Saved to mistake notebook. That is how errors become assets.");
 });
 
 els.clearMistakes.addEventListener("click", () => {
   state.mistakes = [];
   saveState();
   renderMistakes();
+  showToast("Mistake notebook cleared. Fresh page, sharper eye.");
 });
 
 els.micButton.addEventListener("click", () => {
@@ -704,6 +816,7 @@ els.micButton.addEventListener("click", () => {
     els.micButton.textContent = "麦克风";
   };
   recognition.start();
+  showToast("Speak clearly, then listen back like a coach.");
 });
 
 els.exportData.addEventListener("click", async () => {
@@ -711,6 +824,7 @@ els.exportData.addEventListener("click", async () => {
   try {
     await navigator.clipboard.writeText(text);
     els.exportData.textContent = "已复制";
+    showToast("Backup copied. Future you is protected.");
     setTimeout(() => { els.exportData.textContent = "导出数据"; }, 1200);
   } catch {
     alert(text);
@@ -721,6 +835,16 @@ els.clearDone.addEventListener("click", () => {
   hideMastered = !hideMastered;
   els.clearDone.textContent = hideMastered ? "显示已掌握" : "隐藏已掌握";
   render();
+});
+
+els.newQuote.addEventListener("click", () => {
+  const current = els.dailyQuote.textContent;
+  let next = randomFrom(ENCOURAGEMENTS);
+  if (ENCOURAGEMENTS.length > 1) {
+    while (next === current) next = randomFrom(ENCOURAGEMENTS);
+  }
+  els.dailyQuote.textContent = next;
+  showToast("A new line for today's momentum.");
 });
 
 els.generateFriendLink.addEventListener("click", async () => {
