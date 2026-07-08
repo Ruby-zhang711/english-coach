@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>私人英语教练</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="topbar" aria-label="学习概览">
+        <div>
+          <p class="eyebrow">Private English Coach</p>
+          <h1>私人英语教练</h1>
+          <p id="profileLabel" class="profile-label">当前空间：我的英语训练</p>
+        </div>
+        <div class="top-actions">
+          <div class="today-card">
+            <span id="todayLabel">Today</span>
+            <strong id="dueCount">0</strong>
+            <span>个到期复习</span>
+          </div>
+          <button id="openDueQuiz" class="primary-btn compact" type="button">参加测验</button>
+        </div>
+      </section>
+
+      <section id="dueBanner" class="due-banner" aria-live="polite">
+        <div>
+          <strong id="dueBannerTitle">今天没有到期测验</strong>
+          <p id="dueBannerText">录入词汇后，我会按记忆曲线提醒你。</p>
+        </div>
+        <button id="bannerQuiz" class="primary-btn compact" type="button">开始</button>
+      </section>
+
+      <section class="workspace">
+        <aside class="panel left-panel" aria-label="今日输入">
+          <div class="panel-header">
+            <h2>批量导入</h2>
+            <button class="icon-btn" id="importSample" type="button" title="载入示例">+</button>
+          </div>
+
+          <label>
+            从备忘录粘贴
+            <textarea id="bulkInput" rows="8" placeholder="forge&#10;splintered&#10;initiative&#10;co-chair&#10;sovereignty"></textarea>
+          </label>
+          <button id="bulkAdd" class="primary-btn" type="button">自动生成词卡</button>
+          <p class="helper-text">会自动拆行、推测词性/词形，并为常见表达补同义词。中文释义可以先留空，之后由我帮你精修。</p>
+
+          <form id="wordForm" class="word-form">
+            <h2>单词补录</h2>
+            <label>
+              英文词汇/表达
+              <input id="termInput" type="text" placeholder="e.g. regulatory scrutiny" required />
+            </label>
+            <label>
+              中文含义
+              <input id="meaningInput" type="text" placeholder="监管审查" required />
+            </label>
+            <label>
+              语境/例句
+              <textarea id="contextInput" rows="4" placeholder="The deal is facing renewed regulatory scrutiny."></textarea>
+            </label>
+            <label>
+              同义词/近义表达
+              <input id="synonymsInput" type="text" placeholder="oversight, examination, review" />
+            </label>
+            <label>
+              难度
+              <select id="levelInput">
+                <option value="C1">C1 高阶表达</option>
+                <option value="B2">B2 稳固提升</option>
+                <option value="C2">C2 精准语域</option>
+              </select>
+            </label>
+            <button class="primary-btn" type="submit">加入今日词库</button>
+          </form>
+
+          <div class="mini-actions">
+            <button id="exportData" type="button">导出数据</button>
+            <button id="clearDone" type="button">隐藏已掌握</button>
+          </div>
+        </aside>
+
+        <section class="main-panel" aria-label="训练区">
+          <div class="training-grid">
+            <article class="panel lesson-card">
+              <div class="panel-header">
+                <h2>今日 15 分钟训练</h2>
+                <span class="status-pill">C1 Mode</span>
+              </div>
+              <div id="taskList" class="lesson-steps">
+                <label><input type="checkbox" data-task="skim" /><strong>2 min</strong><span>扫读新闻要点，找出冲突或变化</span></label>
+                <label><input type="checkbox" data-task="read" /><strong>4 min</strong><span>精读一段英文，标出动词搭配</span></label>
+                <label><input type="checkbox" data-task="words" /><strong>3 min</strong><span>用今日词汇主动造句</span></label>
+                <label><input type="checkbox" data-task="speak" /><strong>3 min</strong><span>30-60 秒英文复述</span></label>
+                <label><input type="checkbox" data-task="write" /><strong>3 min</strong><span>写 3-5 句观点短评</span></label>
+              </div>
+              <div class="progress-track"><span id="taskProgress"></span></div>
+            </article>
+
+            <article class="panel quiz-card">
+              <div class="panel-header">
+                <h2>记忆曲线复习</h2>
+                <button id="startQuiz" class="primary-btn compact" type="button">开始测验</button>
+              </div>
+              <div class="curve">
+                <span>D0</span><span>D1</span><span>D3</span><span>D7</span><span>D14</span><span>D30</span>
+              </div>
+              <p id="reviewHint" class="muted">录入生词后，我会按周期把它们推到复习队列。</p>
+            </article>
+          </div>
+
+          <article class="panel output-studio">
+            <div class="panel-header">
+              <h2>每日输出与批改</h2>
+              <button id="saveCorrection" class="primary-btn compact" type="button">加入错题本</button>
+            </div>
+            <div class="output-grid">
+              <section>
+                <label>
+                  写作输入
+                  <textarea id="writingInput" rows="7" placeholder="Write 3-5 sentences here. Use today's words and one mimic pattern."></textarea>
+                </label>
+                <button id="analyzeWriting" type="button">检查表达</button>
+              </section>
+              <section>
+                <label>
+                  口语复述
+                  <textarea id="speechInput" rows="7" placeholder="点击麦克风后开始复述，或手动粘贴你的口语稿。"></textarea>
+                </label>
+                <div class="split-actions">
+                  <button id="micButton" type="button">麦克风</button>
+                  <button id="analyzeSpeech" type="button">检查口语稿</button>
+                </div>
+              </section>
+            </div>
+            <div id="feedbackBox" class="feedback-box">
+              <strong>老师反馈会出现在这里</strong>
+              <p>我会先做本地规则检查：句子长度、重复词、连接词、模糊表达、常见语法风险和更高级替换。你也可以把文本发给我，我会做真正的逐句精修。</p>
+            </div>
+          </article>
+
+          <article class="panel word-bank">
+            <div class="panel-header">
+              <h2>生词记录</h2>
+              <div class="filters" role="group" aria-label="筛选">
+                <button class="filter active" data-filter="all" type="button">全部</button>
+                <button class="filter" data-filter="due" type="button">到期</button>
+                <button class="filter" data-filter="mastered" type="button">已掌握</button>
+              </div>
+            </div>
+            <div id="wordList" class="word-list"></div>
+          </article>
+
+          <article class="panel mistake-bank">
+            <div class="panel-header">
+              <h2>错题本</h2>
+              <button id="clearMistakes" type="button">清空</button>
+            </div>
+            <div id="mistakeList" class="mistake-list"></div>
+          </article>
+        </section>
+
+        <aside class="panel right-panel" aria-label="输出任务">
+          <h2>小伙伴链接</h2>
+          <div class="friend-link-box">
+            <label>
+              朋友名字
+              <input id="friendNameInput" type="text" placeholder="例如 Amanda / 小王" />
+            </label>
+            <button id="generateFriendLink" class="primary-btn compact" type="button">生成链接</button>
+            <textarea id="friendLinkOutput" rows="3" readonly placeholder="生成后会出现在这里"></textarea>
+            <p class="helper-text">本地 file 链接只能在你电脑上用；部署到网页后，这个 profile 链接就可以发给朋友。</p>
+          </div>
+
+          <h2>每日输出</h2>
+          <div class="prompt-block">
+            <span>复述</span>
+            <p>Summarize the news in 30-60 seconds: background, key tension, and your view.</p>
+          </div>
+          <div class="prompt-block">
+            <span>写作</span>
+            <p>Write 3-5 sentences using at least two words from today's bank and one mimic sentence pattern.</p>
+          </div>
+          <div class="prompt-block">
+            <span>批改</span>
+            <p>把你的英文贴给我，我会按语法、自然度、逻辑、语气和高级替换逐项改。</p>
+          </div>
+          <div class="prompt-block">
+            <span>定期测试</span>
+            <p>输入测试考词义、词形、同义替换和搭配；输出测试考写作、复述、改写和观点表达。</p>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <dialog id="quizDialog" class="quiz-dialog">
+      <form method="dialog" class="quiz-box">
+        <div class="panel-header">
+          <h2 id="quizTitle">复习小测</h2>
+          <button class="icon-btn" value="close" title="关闭" type="submit">x</button>
+        </div>
+        <div id="quizBody" class="quiz-body"></div>
+        <div class="quiz-actions">
+          <button id="showAnswer" type="button">显示答案</button>
+          <button id="markHard" type="button">还不熟</button>
+          <button id="markKnown" class="primary-btn" type="button">答对了</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
