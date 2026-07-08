@@ -304,6 +304,18 @@ select:focus {
   color: var(--ink);
 }
 
+.save-status {
+  margin: 10px 0 0;
+  border: 1px solid #dff3e8;
+  border-radius: 8px;
+  background: #f3fff8;
+  color: #28724f;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.45;
+  padding: 10px 12px;
+}
+
 .training-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(260px, 0.75fr);
